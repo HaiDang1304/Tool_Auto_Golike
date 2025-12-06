@@ -12,7 +12,14 @@ build/
 venv/
 ENV/
 accounts.json
+accounts_full.json
+cookies/
+*.pkl
 *.log
 *.csv
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+chromedriver.exe
+chromedriver

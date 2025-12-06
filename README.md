@@ -1,118 +1,205 @@
-# GoLike Auto Tool - Hướng dẫn sử dụng
+# 🤖 GoLike Auto Tool - Bot tự động làm nhiệm vụ
 
-## 🚀 Tính năng
-- ✅ Tự động đăng nhập GoLike bằng username/password
-- ✅ Hỗ trợ **7 kênh nhiệm vụ**: Facebook, TikTok, Shopee, Twitter, Youtube, Instagram, Traffic
-- ✅ Tự động nhận và làm nhiệm vụ (Like, Follow, Subscribe, View...)
-- ✅ Hỗ trợ nhiều tài khoản, mỗi tài khoản có thể chọn kênh riêng
-- ✅ Ghi log chi tiết mỗi nhiệm vụ vào file CSV
-- ✅ Chạy tự động liên tục theo vòng lặp
+## ✨ Tính năng chính
 
-## 📋 Yêu cầu
-- Python 3.7+
-- Google Chrome đã cài đặt
-- Các thư viện: selenium, webdriver-manager (đã cài đặt)
+### 🎯 Tự động hoàn toàn
+- ✅ **Auto login GoLike** - Đăng nhập tự động bằng username/password
+- ✅ **Auto login Platforms** - Tự động đăng nhập vào Shopee, TikTok, YouTube
+- ✅ **Cookie Persistence** - Lưu cookies để không phải đăng nhập lại mỗi lần
+- ✅ **Smart Captcha Solver** - Tự động giải captcha (audio + checkbox)
+- ✅ **Anti-Detection** - Chống phát hiện bot (human-like behavior)
 
-## ⚙️ Cấu hình
+### 🌐 Hỗ trợ nhiều kênh
+- 🛒 **Shopee** - Follow shop
+- 🎵 **TikTok** - Follow, Like, Comment, Share
+- 📺 **YouTube** - Subscribe, Like, Comment, Share
+- 📸 **Instagram** - Follow, Like, Comment
+- 🐦 **Twitter** - Follow, Like, Retweet
+- 🌍 **Traffic** - Tăng lượt xem website
 
-### 1. Sửa file `accounts.json`
-Thay thế username, password và chọn kênh nhiệm vụ:
+### 🔐 Quản lý tài khoản
+- ✅ Hỗ trợ nhiều tài khoản GoLike
+- ✅ Quản lý thông tin login các platform (Shopee, TikTok, YouTube...)
+- ✅ Bật/tắt từng tài khoản dễ dàng
+- ✅ Bảo mật thông tin (gitignore credentials)
+
+## 📋 Yêu cầu hệ thống
+- **Python 3.7+** (khuyến nghị Python 3.11+)
+- **Google Chrome** (phiên bản mới nhất)
+- **Internet ổn định**
+
+## 🚀 Cài đặt nhanh
+
+### Bước 1: Clone repository
+```bash
+git clone https://github.com/HaiDang1304/Tool_Auto_Golike.git
+cd Tool_Auto_Golike
+```
+
+### Bước 2: Cài đặt thư viện
+```bash
+pip install -r requirements.txt
+```
+
+### Bước 3: Cấu hình tài khoản
+Đổi tên file `accounts_full.example.json` thành `accounts_full.json` và điền thông tin:
 
 ```json
 [
-  {
-    "name": "GoLike_Account_1",
-    "enabled": true,
-    "username": "your_username_1",           // ← Thay username thật của bạn
-    "password": "your_password_1",           // ← Thay password thật của bạn
-    "channels": ["facebook", "tiktok"],      // ← Chọn kênh muốn làm
-    "max_tasks_per_round": 10,
-    "note": "Tài khoản chính"
-  }
+    {
+        "name": "Account1",
+        "enabled": true,
+        "golike": {
+            "username": "your_golike_username",
+            "password": "your_golike_password"
+        },
+        "platforms": {
+            "shopee": {
+                "username": "0987654321",
+                "password": "shopee_password"
+            },
+            "tiktok": {
+                "username": "email@example.com",
+                "password": "tiktok_password",
+                "login_method": "email"
+            },
+            "youtube": {
+                "email": "gmail@gmail.com",
+                "password": "google_password"
+            }
+        },
+        "settings": {
+            "max_jobs_per_session": 50,
+            "auto_login": true,
+            "save_cookies": true
+        }
+    }
 ]
 ```
 
-**Các kênh có sẵn:**
-- `facebook` - Làm nhiệm vụ Facebook (Like, Follow, Share...)
-- `tiktok` - Làm nhiệm vụ TikTok (Follow, Like, Comment...)
-- `shopee` - Làm nhiệm vụ Shopee (Follow shop...)
-- `twitter` - Làm nhiệm vụ Twitter (Follow, Like, Retweet...)
-- `youtube` - Làm nhiệm vụ Youtube (Subscribe, Like, Comment...)
-- `instagram` - Làm nhiệm vụ Instagram (Follow, Like...)
-- `traffic` - Tăng traffic (View website)
+**Giải thích:**
+- ✅ `enabled: true` - Bật tài khoản
+- ✅ `golike` - Thông tin đăng nhập GoLike (bắt buộc)
+- ✅ `platforms` - Thông tin login các sàn (chỉ cần điền sàn bạn muốn làm)
+- ✅ `auto_login: true` - Tự động đăng nhập vào platforms
+- ✅ `save_cookies: true` - Lưu cookies để không phải login lại
 
-**Lưu ý:**
-- `enabled: true` - Tài khoản sẽ được sử dụng
-- `enabled: false` - Tài khoản sẽ bị bỏ qua
-- `channels` - Danh sách kênh muốn làm (có thể chọn nhiều kênh)
-- `max_tasks_per_round` - Số nhiệm vụ tối đa mỗi kênh mỗi vòng (mặc định: 10)
-
-### 2. Chạy chương trình
-
-Mở PowerShell tại thư mục Tool và chạy:
-
-```powershell
-D:/React/Tool/.venv/Scripts/python.exe main.py
-```
-
-Hoặc đơn giản hơn (nếu đã activate venv):
-```powershell
+### Bước 4: Chạy chương trình
+```bash
 python main.py
 ```
 
-## 📊 Logs
+Chương trình sẽ hiển thị menu để bạn chọn kênh và nhập số lượng nhiệm vụ.
 
-Tất cả hoạt động được ghi vào file `logs.csv`:
-- Thời gian thực hiện
-- Tên tài khoản
-- ID nhiệm vụ
-- Loại nhiệm vụ
-- Trạng thái (success/error)
+## 📖 Hướng dẫn chi tiết
 
-## 🔄 Cách hoạt động
+Xem file [AUTO_LOGIN_GUIDE.md](AUTO_LOGIN_GUIDE.md) để biết thêm chi tiết về:
+- Cách cấu hình tài khoản
+- Quản lý cookies
+- Xử lý lỗi thường gặp
+- Tips & tricks
 
-1. **Đăng nhập**: Tool tự động đăng nhập GoLike với username/password
-2. **Chọn kênh**: Lặp qua từng kênh trong danh sách `channels`
-3. **Nhận nhiệm vụ**: Tìm và click nút "Thực hiện" trên trang nhiệm vụ của kênh
-4. **Làm nhiệm vụ**: Tự động mở tab mới, thực hiện tương tác (Like/Follow/Subscribe...)
-5. **Lặp lại**: Sau khi hoàn thành, chuyển sang nhiệm vụ tiếp theo
-6. **Đổi kênh**: Hoàn thành hết kênh này, chuyển sang kênh khác
-7. **Vòng lặp**: Sau khi xử lý hết tài khoản, nghỉ 60s rồi chạy lại
+## 🔄 Workflow tự động
 
-**Ví dụ luồng:**
 ```
-Account_1 → Facebook (10 nhiệm vụ) → TikTok (10 nhiệm vụ) → Youtube (10 nhiệm vụ)
-Account_2 → Shopee (15 nhiệm vụ) → Twitter (15 nhiệm vụ)
-→ Nghỉ 60s → Lặp lại
+1. Chạy python main.py
+2. Chọn tài khoản (nếu có nhiều account)
+3. Đăng nhập GoLike tự động
+4. Chọn kênh (Shopee/TikTok/YouTube...)
+5. Bot tự động:
+   ├─ Kiểm tra login platform
+   ├─ Auto login platform (nếu cần)
+   ├─ Lưu cookies
+   ├─ Nhận job
+   ├─ Mở link job
+   ├─ Thực hiện tương tác (Follow/Like/Comment...)
+   ├─ Click hoàn thành
+   └─ Lặp lại cho job tiếp theo
 ```
+
+## ⚙️ Tính năng nâng cao
+
+### 1. Anti-Detection
+- ✅ Undetected ChromeDriver (bypass bot detection)
+- ✅ Selenium Stealth (ẩn automation indicators)
+- ✅ Human-like typing (0.1-0.3s mỗi ký tự)
+- ✅ Human-like click (di chuyển chuột trước khi click)
+- ✅ Random delays (4-6s page load, 1-2s giữa các actions)
+- ✅ Random scrolling (cuộn trang như người thật)
+
+### 2. Smart Captcha Solver
+- ✅ Tự động phát hiện captcha (reCAPTCHA v2/v3, hCaptcha, Turnstile)
+- ✅ Giải audio captcha bằng Google Speech Recognition
+- ✅ Fallback methods (checkbox → audio → manual)
+- ✅ Chỉ giải khi thực sự cần thiết (smart detection)
+
+### 3. Cookie Management
+- ✅ Lưu cookies sau khi login thành công
+- ✅ Tự động load cookies lần chạy sau
+- ✅ Kiểm tra cookies còn hạn không
+- ✅ File cookies: `cookies/{AccountName}_{Platform}.pkl`
 
 ## ⚠️ Lưu ý quan trọng
 
-1. **Thời gian chờ**: Tool có delay giữa các thao tác để tránh bị phát hiện bot
-2. **Headless mode**: Bỏ comment dòng `options.add_argument('--headless')` nếu muốn chạy ẩn
-3. **Selector**: Nếu GoLike thay đổi giao diện, cần cập nhật các selector trong code
-4. **Tài khoản Facebook**: Đảm bảo các tài khoản Facebook đã được liên kết với GoLike
+### Bảo mật
+- 🔒 **KHÔNG** share file `accounts_full.json` (chứa mật khẩu)
+- 🔒 **KHÔNG** push file này lên GitHub (đã có .gitignore)
+- 🔒 Nên backup file này ở nơi an toàn
 
-## 🛠️ Tùy chỉnh
+### Chạy bot
+- ⏱️ Bot có delays để tránh bị phát hiện (4-6s mỗi page)
+- 🤖 Đừng lo lắng nếu bot chạy chậm - đó là tính năng anti-detection
+- 🔄 Nếu gặp captcha, bot sẽ tự động giải (hoặc yêu cầu manual)
+- 📱 Nếu gặp OTP, nhập OTP rồi nhấn Enter
 
-### Chọn kênh muốn làm
-Thêm hoặc bớt kênh trong `accounts.json`:
-```json
-"channels": ["facebook", "tiktok", "youtube"]  // Chọn 3 kênh
-"channels": ["traffic"]                        // Chỉ làm traffic
-"channels": []                                 // Không làm kênh nào (bỏ qua)
+### Xử lý lỗi
+- ❌ "Không tìm thấy ô nhập username" → Platform thay đổi giao diện, cần cập nhật selector
+- ❌ "Đăng nhập thất bại" → Kiểm tra username/password trong `accounts_full.json`
+- ❌ "Cookies hết hạn" → Bot sẽ tự động đăng nhập lại
+- ❌ "CODE 429" → Đang bị rate limit, tăng delays hoặc nghỉ 1 lúc
+
+## 📁 Cấu trúc project
+
+```
+Tool_Auto_Golike/
+├── main.py                      # File chính
+├── account_manager.py           # Quản lý tài khoản
+├── auto_login.py                # Auto login platforms
+├── login_checker.py             # Kiểm tra login status
+├── smart_captcha_detector.py    # Phát hiện captcha
+├── recaptcha_solver.py          # Giải reCAPTCHA
+├── hcaptcha_solver.py           # Giải hCaptcha
+├── recaptcha_audio_solver.py    # Giải audio captcha
+├── tiktok_handler.py            # Handler TikTok jobs
+├── youtube_handler.py           # Handler YouTube jobs
+├── accounts_full.json           # Config tài khoản (BẠN TẠO)
+├── accounts_full.example.json   # File mẫu
+├── cookies/                     # Thư mục lưu cookies
+├── requirements.txt             # Danh sách thư viện
+└── README.md                    # File này
 ```
 
-### Thay đổi số nhiệm vụ tối đa mỗi kênh
-Sửa `max_tasks_per_round` trong `accounts.json`:
-```json
-"max_tasks_per_round": 20  // Làm 20 nhiệm vụ/kênh
-```
+## 🤝 Đóng góp
 
-### Thay đổi thời gian nghỉ giữa các vòng
-Tìm dòng trong `main.py`:
-```python
-sleep(60)  # Nghỉ 60 giây → Có thể đổi thành 300 (5 phút)
+Nếu bạn phát hiện bug hoặc muốn thêm tính năng:
+1. Fork repository này
+2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Mở Pull Request
+
+## 📞 Liên hệ
+
+- GitHub: [@HaiDang1304](https://github.com/HaiDang1304)
+- Repository: [Tool_Auto_Golike](https://github.com/HaiDang1304/Tool_Auto_Golike)
+
+## ⚖️ License
+
+Dự án này chỉ dùng cho mục đích học tập và nghiên cứu. Vui lòng tuân thủ Terms of Service của GoLike.
+
+---
+
+**⭐ Nếu tool hữu ích, đừng quên star repo nhé!**
 ```
 
 ### Chạy chế độ không hiện trình duyệt (headless)

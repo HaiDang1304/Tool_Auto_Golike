@@ -6,12 +6,63 @@ import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium_stealth import stealth
 from recaptcha_solver import auto_solve_recaptcha, check_recaptcha_exists
+from smart_captcha_detector import smart_detect_all_captchas, is_captcha_required, get_solvable_captcha
+from tiktok_handler import auto_tiktok_job
+from youtube_handler import auto_youtube_job
+from login_checker import ensure_platform_login, check_platform_login
+from account_manager import AccountManager
+from auto_login import auto_login_platform
 
 def random_sleep(min_sec=1, max_sec=3):
     """Sleep thoi gian ngau nhien de tranh bi phat hien bot"""
     sleep(random.uniform(min_sec, max_sec))
+
+def human_like_typing(element, text, min_delay=0.1, max_delay=0.3):
+    """Nhap text nhu nguoi that - cham va tu nhien"""
+    element.clear()
+    sleep(random.uniform(0.3, 0.7))  # Doi sau khi clear
+    
+    for char in text:
+        element.send_keys(char)
+        # Ngau nhien co nhung ky tu go nhanh, co ky tu go cham
+        if random.random() < 0.1:  # 10% go cham hon
+            sleep(random.uniform(max_delay, max_delay * 2))
+        else:
+            sleep(random.uniform(min_delay, max_delay))
+    
+    # Doi mot chut sau khi go xong (nhu nguoi that suy nghi)
+    sleep(random.uniform(0.3, 0.8))
+
+def human_like_click(driver, element):
+    """Click nhu nguoi that - co di chuyen chuot"""
+    try:
+        from selenium.webdriver.common.action_chains import ActionChains
+        
+        # Di chuyen den element (nhu nguoi that)
+        actions = ActionChains(driver)
+        actions.move_to_element(element)
+        actions.pause(random.uniform(0.2, 0.5))  # Dung mot chut
+        actions.click()
+        actions.perform()
+        
+        # Doi sau khi click
+        sleep(random.uniform(0.3, 0.7))
+    except Exception as e:
+        # Fallback: Click thong thuong
+        element.click()
+        sleep(random.uniform(0.3, 0.7))
+
+def scroll_randomly(driver):
+    """Cuon trang ngau nhien mot chut (hanh vi tu nhien)"""
+    try:
+        scroll_amount = random.randint(100, 300)
+        driver.execute_script(f"window.scrollBy(0, {scroll_amount});")
+        sleep(random.uniform(0.5, 1.0))
+    except:
+        pass
 
 # ========== CAU HINH ==========
 ACCOUNTS_FILE = "accounts.json"
@@ -81,75 +132,149 @@ def show_menu():
             print("Loi nhap lieu! Vui long chon lai.")
 
 
-def check_and_solve_captcha(driver, auto_mode=True):
-    """Kiem tra va tu dong giai reCAPTCHA"""
+def check_and_solve_captcha(driver, auto_mode=True, max_retries=3):
+    """Kiem tra THONG MINH va tu dong giai captcha NEU CAN"""
     try:
-        # Kiem tra co reCAPTCHA khong
-        if check_recaptcha_exists(driver):
-            print("\n" + "="*60)
-            print("PHAT HIEN reCAPTCHA!")
-            print("="*60)
-            
-            if auto_mode:
-                # Thu giai tu dong
-                success = auto_solve_recaptcha(driver, method="smart")
-                if success:
-                    print("[OK] Da giai reCAPTCHA!")
-                    return True
-                else:
-                    print("[!] Khong the giai reCAPTCHA")
-                    return False
-            else:
-                # Giai thu cong
-                success = auto_solve_recaptcha(driver, method="manual")
-                return success
+        print("\n[*] Dang quet trang web tim captcha...")
         
-        # Khong co captcha - return False nhung khong in log
-        return False
+        # Buoc 1: Phat hien tat ca captcha
+        captchas = smart_detect_all_captchas(driver, verbose=True)
+        
+        if not captchas:
+            print("[OK] Khong co captcha - Bo qua")
+            return False  # Khong co captcha = khong can giai
+        
+        # Buoc 2: Kiem tra xem co CAN giai khong
+        print("\n[*] Kiem tra xem captcha co can giai khong...")
+        
+        if not is_captcha_required(driver, wait_time=1):
+            print("[OK] Captcha da duoc xu ly hoac khong can giai")
+            return False
+        
+        # Buoc 3: Lay captcha co the giai duoc
+        solvable = get_solvable_captcha(driver)
+        
+        if not solvable:
+            print("[!] Khong tim thay captcha co the giai (co the la reCAPTCHA v3)")
+            return False
+        
+        # Buoc 4: Bat dau giai captcha
+        captcha_type = solvable.get("type")
+        print("\n" + "="*60)
+        print(f"PHAT HIEN {captcha_type.upper()} - BAT DAU GIAI!")
+        print("="*60)
+        
+        if auto_mode:
+            # Thu giai tu dong nhieu lan
+            for attempt in range(max_retries):
+                print(f"\n[*] Lan thu {attempt + 1}/{max_retries}...")
+                
+                # Chon phuong phap giai phu hop
+                if captcha_type == "recaptcha_v2":
+                    success = auto_solve_recaptcha(driver, method="smart")
+                elif captcha_type == "hcaptcha":
+                    # Import hcaptcha solver neu can
+                    try:
+                        from hcaptcha_solver import auto_solve_hcaptcha
+                        success = auto_solve_hcaptcha(driver, method="auto")
+                    except ImportError:
+                        print("[!] Khong tim thay hcaptcha_solver.py")
+                        success = False
+                else:
+                    success = False
+                
+                if success:
+                    print("[OK] Da giai captcha thanh cong!")
+                    sleep(2)
+                    
+                    # Kiem tra lai xem captcha co con khong
+                    if not is_captcha_required(driver, wait_time=1):
+                        print("[OK] Xac nhan captcha da bien mat!")
+                        return True
+                    else:
+                        print("[!] Captcha van con, thu lai...")
+                        continue
+                
+                if attempt < max_retries - 1:
+                    print(f"[!] That bai! Cho 3s truoc khi thu lai...")
+                    sleep(3)
+            
+            print(f"\n[!] Da thu het {max_retries} lan nhung van khong giai duoc")
+            print("[*] Chuyen sang che do thu cong...")
+            return auto_solve_recaptcha(driver, method="manual")
+        else:
+            # Giai thu cong
+            success = auto_solve_recaptcha(driver, method="manual")
+            return success
         
     except Exception as e:
-        # Chi in log neu that su co loi, khong phai la khong tim thay captcha
-        # print(f"[DEBUG] Loi kiem tra captcha: {e}")
+        print(f"[ERROR] Loi kiem tra captcha: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
 def login_golike(driver, username, password):
-    """Dang nhap GoLike"""
+    """Dang nhap GoLike - MO PHONG NGUOI THAT"""
     try:
-        print("\n[*] Dang dang nhap GoLike...")
+        print("\n[*] Dang truy cap trang dang nhap GoLike...")
         driver.get(LOGIN_URL)
-        sleep(3)
         
-        # Nhap username (nhu nguoi that)
-        print("[*] Nhap username...")
-        username_input = driver.find_element(By.XPATH, "//input[@type='text' or @name='username']")
-        username_input.clear()
-        for char in username:
-            username_input.send_keys(char)
-            sleep(random.uniform(0.05, 0.15))  # Gia lap go phim
-        random_sleep(0.5, 1)
+        # Doi lau hon de trang load hoan toan
+        print("[*] Doi trang load...")
+        sleep(random.uniform(4, 6))  # 4-6 giay (nguoi that thuong doi)
         
-        # Nhap password
-        print("[*] Nhap password...")
+        # Cuon trang mot chut (hanh vi tu nhien)
+        scroll_randomly(driver)
+        sleep(random.uniform(1, 2))
+        
+        # Tim va click vao o username (nhu nguoi that)
+        print("[*] Click vao o username...")
+        username_input = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//input[@type='text' or @name='username']"))
+        )
+        
+        # Di chuot den o username va click
+        human_like_click(driver, username_input)
+        sleep(random.uniform(0.5, 1.0))
+        
+        # Nhap username CHAM va TU NHIEN
+        print("[*] Dang nhap username...")
+        human_like_typing(username_input, username, min_delay=0.1, max_delay=0.3)
+        
+        # Doi mot chut truoc khi chuyen sang password (nhu nguoi that suy nghi)
+        sleep(random.uniform(0.8, 1.5))
+        
+        # Tim va click vao o password
+        print("[*] Click vao o password...")
         password_input = driver.find_element(By.XPATH, "//input[@type='password' or @name='password']")
-        password_input.clear()
-        for char in password:
-            password_input.send_keys(char)
-            sleep(random.uniform(0.05, 0.15))
-        random_sleep(0.5, 1)
+        human_like_click(driver, password_input)
+        sleep(random.uniform(0.5, 1.0))
         
-        # Click dang nhap
+        # Nhap password CHAM va TU NHIEN
+        print("[*] Dang nhap password...")
+        human_like_typing(password_input, password, min_delay=0.1, max_delay=0.25)
+        
+        # Doi lau truoc khi click nut dang nhap (nguoi that thuong kiem tra lai)
+        sleep(random.uniform(1.0, 2.0))
+        
+        # Tim va click nut dang nhap
         print("[*] Click nut dang nhap...")
         login_btn = driver.find_element(By.XPATH, "//button[@type='submit']")
-        login_btn.click()
-        print("[*] Dang doi ket qua...")
-        sleep(3)
+        human_like_click(driver, login_btn)
         
-        # QUAN TRONG: Kiem tra va giai captcha SAU KHI click login
-        print("[*] Kiem tra captcha...")
-        if check_and_solve_captcha(driver):
-            print("[*] Da xu ly captcha, doi them...")
+        print("[*] Dang doi server xu ly...")
+        sleep(random.uniform(5, 7))  # Doi lau hon de server xu ly
+        
+        # QUAN TRONG: Kiem tra va giai captcha SAU KHI click login (neu co)
+        print("[*] Kiem tra xem co captcha khong...")
+        captcha_detected = check_and_solve_captcha(driver)
+        
+        if captcha_detected:
+            print("[*] Da xu ly captcha, doi ket qua dang nhap...")
             sleep(3)
+        else:
+            print("[*] Khong co captcha hoac da duoc xu ly tu dong")
         
         # Kiem tra dang nhap thanh cong
         print("[*] Kiem tra ket qua dang nhap...")
@@ -530,6 +655,24 @@ def do_one_job(driver, channel):
             # Doi load trang
             sleep(5)
             
+            # QUAN TRONG: Kiem tra dang nhap truoc khi lam job
+            print("\n[*] Kiem tra trang thai dang nhap...")
+            is_logged_in = ensure_platform_login(driver, channel, auto_prompt=True)
+            
+            if not is_logged_in:
+                print("\n[!] KHONG THE LAM JOB - Chua dang nhap!")
+                print("[!] Job nay se KHONG DUOC TINH va KHONG TRA TIEN")
+                print("[*] Bam Enter de bao loi va bo qua job nay...")
+                input(">>> ")
+                
+                # Dong tab va quay lai
+                driver.close()
+                driver.switch_to.window(original_window)
+                
+                # Bao loi job
+                print("  [*] Bao loi job (chua dang nhap)...")
+                return False
+            
             # Thuc hien hanh dong tuy theo kenh
             action_success = False
             
@@ -582,24 +725,55 @@ def do_one_job(driver, channel):
                             pass
                 
                 elif channel == "tiktok":
-                    # TikTok: Tim nut Follow
-                    follow_btns = driver.find_elements(By.XPATH, 
-                        "//button[contains(text(), 'Follow') or contains(text(), 'Theo dõi')]")
-                    if follow_btns:
-                        driver.execute_script("arguments[0].click();", follow_btns[0])
-                        print("  [OK] Da follow TikTok!")
-                        action_success = True
-                        sleep(2)
+                    # TikTok: Sử dụng handler chuyên dụng
+                    print("  [*] Xử lý TikTok job...")
+                    
+                    # Phát hiện loại job (follow, like, comment, share)
+                    job_type = "follow"  # Mặc định là follow
+                    
+                    # Kiểm tra URL để xác định loại job
+                    try:
+                        current_url = driver.current_url.lower()
+                        if "/@" in current_url and "/video/" not in current_url:
+                            job_type = "follow"  # Profile page -> Follow
+                        elif "/video/" in current_url:
+                            # Video page -> có thể là like hoặc comment
+                            job_type = "like"  # Mặc định like video
+                    except:
+                        job_type = "follow"
+                    
+                    action_success = auto_tiktok_job(driver, job_type)
+                    
+                    if action_success:
+                        print(f"  [OK] Đã hoàn thành TikTok {job_type}!")
+                    else:
+                        print(f"  [!] Không thể thực hiện TikTok {job_type}")
+                    
+                    sleep(2)
                 
                 elif channel == "youtube":
-                    # YouTube: Tim nut Subscribe
-                    follow_btns = driver.find_elements(By.XPATH,
-                        "//button[contains(text(), 'Subscribe') or contains(text(), 'Đăng ký')]")
-                    if follow_btns:
-                        driver.execute_script("arguments[0].click();", follow_btns[0])
-                        print("  [OK] Da subscribe Youtube!")
-                        action_success = True
-                        sleep(2)
+                    # YouTube: Sử dụng handler chuyên dụng
+                    print("  [*] Xử lý YouTube job...")
+                    
+                    # Phát hiện loại job
+                    job_type = "subscribe"  # Mặc định là subscribe
+                    
+                    # Kiểm tra URL
+                    current_url = driver.current_url.lower()
+                    if "/watch?v=" in current_url:
+                        # Video page -> like hoặc comment
+                        job_type = "like"  # Mặc định like
+                    elif "/@" in current_url or "/channel/" in current_url or "/c/" in current_url:
+                        job_type = "subscribe"  # Channel page -> Subscribe
+                    
+                    action_success = auto_youtube_job(driver, job_type)
+                    
+                    if action_success:
+                        print(f"  [OK] Đã hoàn thành YouTube {job_type}!")
+                    else:
+                        print(f"  [!] Không thể thực hiện YouTube {job_type}")
+                    
+                    sleep(2)
                 
                 elif channel in ["instagram", "twitter"]:
                     # Instagram/Twitter: Tim nut Follow
@@ -762,7 +936,7 @@ def do_one_job(driver, channel):
         return False, 0
 
 
-def do_jobs_for_channel(driver, channel, max_jobs):
+def do_jobs_for_channel(driver, channel, max_jobs, account_data=None):
     """Lam nhiem vu cho 1 kenh"""
     channel_url = CHANNEL_URLS.get(channel)
     if not channel_url:
@@ -773,8 +947,36 @@ def do_jobs_for_channel(driver, channel, max_jobs):
     print(f"KENH: {CHANNEL_NAMES.get(channel, channel.upper())}")
     print(f"{'='*60}")
     
-    # Vao trang kenh
-    print(f"[*] Dang vao kenh {channel.upper()}...")
+    # BUOC 1: Auto login vao platform neu co credentials
+    if account_data and channel in ['shopee', 'tiktok', 'youtube', 'instagram', 'twitter']:
+        platform_creds = account_data.get('platforms', {}).get(channel, {})
+        
+        if platform_creds and platform_creds.get('username') and platform_creds.get('password'):
+            print(f"\n[*] Phat hien thong tin dang nhap {channel.upper()}...")
+            
+            # Kiem tra xem da login chua
+            if not check_platform_login(driver, channel):
+                print(f"[*] Chua dang nhap {channel.upper()}, bat dau auto login...")
+                
+                # Lay cookies file path
+                cookie_file = None
+                if account_data.get('settings', {}).get('save_cookies', True):
+                    acc_manager = AccountManager()
+                    cookie_file = acc_manager.get_cookie_path(account_data.get('name', 'default'), channel)
+                
+                # Auto login
+                success = auto_login_platform(driver, channel, platform_creds, cookie_file)
+                
+                if success:
+                    print(f"[OK] Da dang nhap {channel.upper()} thanh cong!")
+                else:
+                    print(f"[!] Khong the auto login {channel.upper()}")
+                    print(f"[*] Ban co the dang nhap thu cong sau khi mo job...")
+            else:
+                print(f"[OK] Da dang nhap {channel.upper()} roi!")
+    
+    # BUOC 2: Vao trang kenh GoLike
+    print(f"\n[*] Dang vao kenh {channel.upper()} tren GoLike...")
     print(f"[*] URL: {channel_url}")
     driver.get(channel_url)
     sleep(5)
@@ -818,26 +1020,51 @@ def do_jobs_for_channel(driver, channel, max_jobs):
     return completed, total_coins
 
 
-def run_bot(channel, max_jobs=50):
+def run_bot(channel, max_jobs=50, account_data=None):
     """Chay bot cho 1 kenh"""
-    # Load tai khoan
-    accounts = load_accounts()
     
-    # Lay tai khoan dau tien duoc bat
-    account = None
-    for acc in accounts:
-        if acc.get('enabled', False):
-            account = acc
-            break
+    # Load accounts neu chua co
+    if account_data is None:
+        try:
+            acc_manager = AccountManager()
+            accounts = acc_manager.get_enabled_accounts()
+            
+            if not accounts:
+                print("\n[ERROR] Khong tim thay tai khoan nao duoc bat!")
+                print("Vui long bat tai khoan trong file accounts_full.json")
+                return
+            
+            # Chon tai khoan tu menu
+            from account_manager import show_account_menu
+            account_data = show_account_menu(acc_manager)
+            if account_data is None:
+                print("\n[*] Da huy chon tai khoan")
+                return
+        except FileNotFoundError:
+            # Fallback: Dung file accounts.json cu
+            print("\n[!] Khong tim thay accounts_full.json, dung accounts.json...")
+            accounts = load_accounts()
+            account = None
+            for acc in accounts:
+                if acc.get('enabled', False):
+                    account = acc
+                    break
+            
+            if not account:
+                print("\n[ERROR] Khong tim thay tai khoan nao duoc bat!")
+                return
+            
+            account_data = {
+                'name': account.get('name', 'Unknown'),
+                'golike': {
+                    'username': account.get('username', ''),
+                    'password': account.get('password', '')
+                }
+            }
     
-    if not account:
-        print("\n[ERROR] Khong tim thay tai khoan nao duoc bat!")
-        print("Vui long bat tai khoan trong file accounts.json")
-        return
-    
-    username = account.get('username', '')
-    password = account.get('password', '')
-    account_name = account.get('name', 'Unknown')
+    username = account_data.get('golike', {}).get('username', '')
+    password = account_data.get('golike', {}).get('password', '')
+    account_name = account_data.get('name', 'Unknown')
     
     print(f"\n{'='*60}")
     print(f"TAI KHOAN: {account_name}")
@@ -890,8 +1117,8 @@ def run_bot(channel, max_jobs=50):
             print("\n[ERROR] Khong the dang nhap! Dung lai.")
             return
         
-        # Lam nhiem vu
-        completed, total_coins = do_jobs_for_channel(driver, channel, max_jobs)
+        # Lam nhiem vu (truyen account_data de co the auto login platforms)
+        completed, total_coins = do_jobs_for_channel(driver, channel, max_jobs, account_data)
         
         # Hien thi ket qua
         print(f"\n{'='*60}")

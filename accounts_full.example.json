@@ -1,0 +1,118 @@
+{
+  "accounts": [
+    {
+      "id": 1,
+      "name": "Account_Main",
+      "enabled": true,
+      "note": "Tài khoản chính - làm tất cả",
+      
+      "golike": {
+        "username": "haidanglu2004",
+        "password": "haidang1304"
+      },
+      
+      "platforms": {
+        "shopee": {
+          "enabled": true,
+          "username": "haidanglu130404@gmail.com",
+          "password": "haidang1304",
+          "login_method": "phone"
+        },
+        
+        "tiktok": {
+          "enabled": true,
+          "username": "haidanglu130404@gmail.com",
+          "password": "haidang1304",
+          "login_method": "email"
+        },
+        
+        "youtube": {
+          "enabled": true,
+          "email": "haidanglu130404@gmail.com",
+          "password": "haidang1304",
+          "login_method": "google"
+        },
+        
+        "instagram": {
+          "enabled": false,
+          "username": "your_instagram_username",
+          "password": "your_instagram_password",
+          "login_method": "username"
+        },
+        
+        "twitter": {
+          "enabled": false,
+          "username": "your_twitter_username",
+          "password": "your_twitter_password",
+          "login_method": "username"
+        }
+      },
+      
+      "settings": {
+        "max_jobs_per_channel": 10,
+        "auto_login": true,
+        "save_cookies": true
+      }
+    },
+    
+    {
+      "id": 2,
+      "name": "Account_Secondary",
+      "enabled": false,
+      "note": "Tài khoản phụ - chỉ làm TikTok và YouTube",
+      
+      "golike": {
+        "username": "account2_golike",
+        "password": "password2"
+      },
+      
+      "platforms": {
+        "shopee": {
+          "enabled": false,
+          "username": "",
+          "password": ""
+        },
+        
+        "tiktok": {
+          "enabled": true,
+          "username": "tiktok2@gmail.com",
+          "password": "tiktok_pass2",
+          "login_method": "email"
+        },
+        
+        "youtube": {
+          "enabled": true,
+          "email": "youtube2@gmail.com",
+          "password": "youtube_pass2",
+          "login_method": "google"
+        },
+        
+        "instagram": {
+          "enabled": false,
+          "username": "",
+          "password": ""
+        },
+        
+        "twitter": {
+          "enabled": false,
+          "username": "",
+          "password": ""
+        }
+      },
+      
+      "settings": {
+        "max_jobs_per_channel": 5,
+        "auto_login": true,
+        "save_cookies": true
+      }
+    }
+  ],
+  
+  "global_settings": {
+    "cookies_path": "./cookies",
+    "max_login_retries": 3,
+    "login_timeout": 60,
+    "delay_between_accounts": 5,
+    "rotate_accounts": false
+  }
+}
